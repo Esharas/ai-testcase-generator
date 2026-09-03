@@ -7,9 +7,9 @@ import os
 # FastAPI Backend URL
 # --------------------------------------------------
 
-if "API_URL" in st.secrets:
+try:
     API_URL = st.secrets["API_URL"]
-else:
+except Exception:
     API_URL = "http://127.0.0.1:8000"
 
 st.set_page_config(
