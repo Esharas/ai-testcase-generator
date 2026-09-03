@@ -2,6 +2,7 @@ import os
 import json
 from dotenv import load_dotenv
 from google import genai
+import time
 
 load_dotenv()
 
@@ -138,18 +139,46 @@ Do not return ```json.
 Return only the JSON array.
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt
-    )
 
-    text = response.text.strip()
+    # Retry Gemini request if the service temporarily returns 503
+    max_retries = 3
 
-    # Remove accidental markdown formatting
-    if text.startswith("```"):
-        text = text.replace("```json", "")
-        text = text.replace("```", "")
-        text = text.strip()
+    for attempt in range(max_retries):
+
+        try:
+
+            response = client.models.generate_content(
+                model="gemini-3.6-flash",
+                contents=prompt,
+                config={
+                    "response_mime_type": "application/json"
+                }
+            )
+
+            text = response.text.strip()
+
+            break
+
+        except Exception as e:
+
+            error_message = str(e)
+
+            # Retry only temporary Gemini 503 errors
+            if "503" in error_message and attempt < max_retries - 1:
+
+                wait_time = 3 * (attempt + 1)
+
+                print(
+                    f"Gemini temporarily unavailable. "
+                    f"Retrying in {wait_time} seconds..."
+                )
+
+                time.sleep(wait_time)
+
+            else:
+
+                raise
+
 
     try:
         return json.loads(text)
