@@ -1,7 +1,16 @@
 import streamlit as st
 import requests
 import pandas as pd
+import os
 
+# --------------------------------------------------
+# FastAPI Backend URL
+# --------------------------------------------------
+
+if "API_URL" in st.secrets:
+    API_URL = st.secrets["API_URL"]
+else:
+    API_URL = "http://127.0.0.1:8000"
 
 st.set_page_config(
     page_title="AI Test Case Generator",
@@ -65,7 +74,7 @@ with generate_col:
                 ):
 
                     response = requests.post(
-                        "http://127.0.0.1:8000/generate-testcases",
+                        f"{API_URL}/generate-testcases",
                         json={
                             "requirement": requirement
                         }
@@ -133,7 +142,7 @@ with export_col:
                 ):
 
                     excel_response = requests.post(
-                        "http://127.0.0.1:8000/generate-excel",
+                         f"{API_URL}/generate-excel",
                         json={
                             "test_cases": (
                                 st.session_state["test_cases"]
