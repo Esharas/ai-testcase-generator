@@ -21,9 +21,22 @@ st.set_page_config(
 
 st.title("🤖 AI Test Case Generator")
 
-st.write(
-    "Enter a requirement and generate detailed software test cases using AI."
-)
+# --------------------------------------------------
+# Top Header / Analyze Button
+# --------------------------------------------------
+
+intro_col, analyze_col = st.columns([4, 1])
+
+with intro_col:
+    st.write(
+        "Enter a requirement and generate detailed software test cases using AI."
+    )
+
+with analyze_col:
+    analyze_button = st.button(
+        "🔍 Analyze Requirement Quality",
+        use_container_width=True
+    )
 
 
 # --------------------------------------------------
@@ -38,6 +51,136 @@ requirement = st.text_area(
     ),
     height=120
 )
+
+# --------------------------------------------------
+# Requirement Quality Analysis Popup
+# --------------------------------------------------
+
+@st.dialog("🔍 Requirement Quality Analysis")
+def show_requirement_analysis(analysis):
+
+    score_col, level_col, testability_col = st.columns(3)
+
+    with score_col:
+        st.metric(
+            "Quality Score",
+            f"{analysis.get('quality_score', 0)}/100"
+        )
+
+    with level_col:
+        st.metric(
+            "Quality Level",
+            analysis.get(
+                "quality_level",
+                "Unknown"
+            )
+        )
+
+    with testability_col:
+        st.metric(
+            "Testability",
+            analysis.get(
+                "testability",
+                "Unknown"
+            )
+        )
+
+    st.divider()
+
+    st.markdown("### ✅ Strengths")
+
+    for item in analysis.get("strengths", []):
+        st.write(f"• {item}")
+
+
+    st.markdown("### ❌ Issues")
+
+    for item in analysis.get("issues", []):
+        st.write(f"• {item}")
+
+
+    st.markdown("### ⚠️ Missing Information")
+
+    for item in analysis.get("missing_information", []):
+        st.write(f"• {item}")
+
+
+    st.markdown("### ⚠️ Ambiguities")
+
+    for item in analysis.get("ambiguities", []):
+        st.write(f"• {item}")
+
+
+    st.markdown("### 💡 Recommended Improvements")
+
+    for item in analysis.get(
+        "recommended_improvements",
+        []
+    ):
+        st.write(f"• {item}")
+
+
+    st.markdown("### ❓ Questions for Product Owner")
+
+    for item in analysis.get(
+        "questions_for_product_owner",
+        []
+    ):
+        st.write(f"• {item}")
+
+# --------------------------------------------------
+# Requirement Quality Analysis
+# --------------------------------------------------
+
+if analyze_button:
+
+    if not requirement.strip():
+
+        st.warning(
+            "Please enter a requirement first."
+        )
+
+    else:
+
+        try:
+
+            with st.spinner(
+                "🤖 Analyzing requirement quality..."
+            ):
+
+                response = requests.post(
+                    f"{API_URL}/analyze-requirement",
+                    json={
+                        "requirement": requirement
+                    }
+                )
+
+            if response.status_code == 200:
+
+                result = response.json()
+
+                analysis = result["analysis"]
+
+                st.session_state["requirement_analysis"] = analysis
+
+                show_requirement_analysis(analysis)
+
+            else:
+
+                st.error(
+                    f"Backend error "
+                    f"({response.status_code})"
+                )
+
+                st.code(response.text)
+
+        except requests.exceptions.ConnectionError:
+
+            st.error(
+                "❌ Cannot connect to FastAPI backend. "
+                "Make sure FastAPI is running."
+            )
+
 
 
 # --------------------------------------------------

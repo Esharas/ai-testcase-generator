@@ -13,6 +13,119 @@ if not api_key:
 
 client = genai.Client(api_key=api_key)
 
+def analyze_requirement(requirement: str):
+
+    prompt = f"""
+You are a senior QA engineer and requirements analyst.
+
+Analyze the following software requirement for quality,
+completeness, clarity, ambiguity, and testability.
+
+REQUIREMENT:
+{requirement}
+
+Evaluate the requirement against:
+
+1. Clarity
+2. Completeness
+3. Testability
+4. Ambiguity
+5. Missing business rules
+6. Missing validation rules
+7. Missing error handling
+8. Missing boundary conditions
+9. Missing acceptance criteria
+
+Give a quality score from 0 to 100.
+
+Use this scale:
+
+90-100 = Excellent
+75-89 = Good
+50-74 = Needs Improvement
+0-49 = Poor
+
+Return ONLY valid JSON.
+
+Use exactly this structure:
+
+{{
+    "quality_score": 75,
+    "quality_level": "Good",
+    "strengths": [
+        "..."
+    ],
+    "issues": [
+        "..."
+    ],
+    "missing_information": [
+        "..."
+    ],
+    "ambiguities": [
+        "..."
+    ],
+    "recommended_improvements": [
+        "..."
+    ],
+    "questions_for_product_owner": [
+        "..."
+    ],
+    "testability": "Partially Testable"
+}}
+
+Do not generate test cases.
+Focus only on requirement quality analysis.
+"""
+
+    max_retries = 3
+
+    for attempt in range(max_retries):
+
+        try:
+
+            response = client.models.generate_content(
+                model="gemini-3.6-flash",
+                contents=prompt,
+                config={
+                    "response_mime_type": "application/json"
+                }
+            )
+
+            text = response.text.strip()
+
+            break
+
+        except Exception as e:
+
+            error_message = str(e)
+
+            if "503" in error_message and attempt < max_retries - 1:
+
+                wait_time = 3 * (attempt + 1)
+
+                print(
+                    f"Gemini temporarily unavailable. "
+                    f"Retrying in {wait_time} seconds..."
+                )
+
+                time.sleep(wait_time)
+
+            else:
+
+                raise
+
+    try:
+
+        return json.loads(text)
+
+    except json.JSONDecodeError as e:
+
+        print("Gemini returned invalid JSON:")
+        print(text)
+
+        raise ValueError(
+            f"Gemini returned invalid JSON: {str(e)}"
+        )
 
 def generate_test_cases(requirement: str):
 

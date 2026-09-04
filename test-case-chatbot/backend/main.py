@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from backend.ai_service import generate_test_cases
 from backend.excel_exporter import export_test_cases_to_excel
+from backend.ai_service import analyze_requirement
 
 import os
 import uuid
@@ -26,8 +27,31 @@ def home():
     return {
         "message": "Test Case Generator API is running"
     }
+# ---------------------------------------
+# Analys the requirment
+# ---------------------------------------
 
+@app.post("/analyze-requirement")
+def analyze(requirement: Requirement):
 
+    try:
+
+        analysis = analyze_requirement(
+            requirement.requirement
+        )
+
+        return {
+            "analysis": analysis
+        }
+
+    except Exception as e:
+
+        print("ERROR:", str(e))
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 # ---------------------------------------
 # Generate test cases using Gemini
 # ---------------------------------------
